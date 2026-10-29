@@ -1,0 +1,10 @@
+import re
+from collections import Counter
+
+text = open('data/lenta.txt').read()
+
+pattern = r'\b(?=\w*[А-Яа-яЁё])(?=\w*[A-Za-z])[А-Яа-яЁёA-Za-z]+\b'
+
+words = re.findall(pattern, text)
+most_common = Counter(words).most_common(1)
+print(most_common)
