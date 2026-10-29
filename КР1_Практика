@@ -1,3 +1,4 @@
+#Задание1
 import re
 from collections import Counter
 
@@ -8,3 +9,61 @@ pattern = r'\b(?=\w*[А-Яа-яЁё])(?=\w*[A-Za-z])[А-Яа-яЁёA-Za-z]+\b'
 words = re.findall(pattern, text)
 most_common = Counter(words).most_common(1)
 print(most_common)
+
+
+#Задание2
+
+text_lower = open('data/lenta.txt').read().lower()
+tokens = [t.strip('.,!?;:"\'()[]{}«»—–-"') for t in text_lower.split()]
+tokens = [t for t in tokens if t]  # убрать пустые после strip
+
+# частоты
+uni, bi, tri = Counter(), Counter(), Counter()
+for i in range(len(tokens) - 2):
+    tri[tokens[i:i+3]] += 1
+for i in range(len(tokens) - 1):
+    bi[tokens[i:i+2]] += 1
+
+seq = "об этом сообщает агентство интерфакс со ссылкой на пресс-службу".split()
+
+results = []
+for i in range(len(seq) - 2):
+    trigram = tuple(seq[i:i+3])
+    bigram = tuple(seq[i:i+2])
+    if bi[bigram] > 0:
+        p = tri[trigram] / bi[bigram]
+        results.append((trigram, p, tri[trigram], bi[bigram]))
+    else:
+        print(f"пропуск (деление на ноль): {trigram}")
+
+for r in results:
+    print(r)
+
+min_trigram = min(results, key=lambda x: x[1])
+print("\nТриграмм с минимальной вероятностью:", " ".join(min_trigram[0]))
+
+#Задание3
+import pandas as pd
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+lenta = pd.read_csv("https://github.com/mannefedov/compling_nlp_hse_course/raw/master/data/lenta_40k.csv.zip")
+sub = lenta.sample(500, random_state=8).reset_index(drop=True)
+
+model = SentenceTransformer('cointegrated/rubert-tiny2')
+
+# тексты в колонке text, эмбеддинги без префиксов
+emb = model.encode(sub.text.tolist(), normalize_embeddings=True, show_progress_bar=True)
+
+
+sim = cosine_similarity(emb)
+np.fill_diagonal(sim, -np.inf)  # исключаем пары текста с самим собой
+
+
+i, j = np.unravel_index(np.argmax(sim), sim.shape)
+print("Индексы:", i, j, "близость:", sim[i, j])
+
+first_i = sub.text[i].split()[0]
+first_j = sub.text[j].split()[0]
+print("Первые слова:", first_i, first_j)
